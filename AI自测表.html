@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="嵩说AI | AI学习自测表 - 找到最适合你的AI学习路线">
+  <title>嵩说AI | AI学习自测表</title>
+
+  <!-- 样式表 -->
+  <link rel="stylesheet" href="styles.css">
+
+  <!-- 第三方库 -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <!-- Feather Icons - SVG图标库 -->
+  <script src="https://cdn.jsdelivr.net/npm/feather-icons@4.29.0/dist/feather.min.js"></script>
+</head>
+<body>
+  <!-- 主容器 -->
+  <div class="container">
+    <!-- Logo 和标题 -->
+    <header class="header">
+      <div class="logo">
+        <h1>嵩说AI <span class="separator">|</span> <span class="subtitle">AI学习自测表</span></h1>
+        <p class="tagline">找到最适合你的AI学习路线</p>
+      </div>
+    </header>
+
+    <!-- 问卷部分 -->
+    <section id="questionnaire" class="questionnaire">
+      <!-- 进度条 -->
+      <div class="progress-container">
+        <div class="progress-bar">
+          <div id="progressBar" class="progress-fill"></div>
+        </div>
+        <p id="progressText" class="progress-text">0 / 26 题已完成</p>
+      </div>
+
+      <!-- 题目容器 -->
+      <div id="questionContainer" class="questions-container">
+        <!-- 题目将通过JS动态渲染 -->
+      </div>
+
+      <!-- 导航按钮 -->
+      <div class="navigation">
+        <button id="prevBtn" class="btn btn-secondary" onclick="prevPage()">⬅ 上一页</button>
+        <span id="pageIndicator" class="page-indicator">第 1 页 / 共 5 页</span>
+        <button id="nextBtn" class="btn btn-primary" onclick="nextPage()">下一页 ➡</button>
+        <button id="submitBtn" class="btn btn-success" onclick="submitTest()" style="display: none;">🎯 查看结果</button>
+      </div>
+    </section>
+
+    <!-- 结果部分 -->
+    <section id="result" class="result" style="display: none;">
+      <div id="resultCard" class="result-card">
+        <!-- 主标题 -->
+        <div class="result-header">
+          <h2>🎉 你的AI学习路线诊断结果</h2>
+        </div>
+
+        <!-- 主路线和副路线 -->
+        <div class="routes-section">
+          <div id="mainRoute" class="route-card main-route">
+            <!-- JS动态渲染 -->
+          </div>
+          <div id="subRoute" class="route-card sub-route">
+            <!-- JS动态渲染 -->
+          </div>
+        </div>
+
+        <!-- 维度得分雷达图 -->
+        <div class="chart-section">
+          <h3>📊 你的8维能力雷达图</h3>
+          <canvas id="radarChart"></canvas>
+        </div>
+
+        <!-- 个性化说明 -->
+        <div class="explanation-section">
+          <h3>💡 为什么是这条路线？</h3>
+          <div id="explanation" class="explanation-text">
+            <!-- JS动态渲染 -->
+          </div>
+        </div>
+
+        <!-- 7日行动清单 -->
+        <div class="checklist-section">
+          <h3>📋 7日行动清单</h3>
+          <div id="checklist" class="checklist">
+            <!-- JS动态渲染 -->
+          </div>
+        </div>
+
+        <!-- 3条口令卡 -->
+        <div class="commands-section">
+          <h3>🎯 口令卡（可一键复制）</h3>
+          <div id="commands" class="commands">
+            <!-- JS动态渲染 -->
+          </div>
+        </div>
+
+        <!-- 分享文案 -->
+        <div class="share-section">
+          <h3>📱 分享文案</h3>
+          <div class="share-box">
+            <p id="shareText"><!-- JS动态渲染 --></p>
+            <button class="btn btn-primary" onclick="copyShareText()">📋 一键复制</button>
+          </div>
+        </div>
+
+        <!-- 导出按钮组 -->
+        <div class="export-section">
+          <h3>📥 导出结果</h3>
+          <div class="export-buttons">
+            <button class="btn btn-export" onclick="exportPNG()">🖼 导出PNG</button>
+            <button class="btn btn-export" onclick="exportPDF()">📄 导出PDF</button>
+            <button class="btn btn-export" onclick="exportJSON()">📊 导出JSON</button>
+          </div>
+        </div>
+
+        <!-- 重新测试按钮 -->
+        <div class="restart-section">
+          <button class="btn btn-secondary" onclick="restartTest()">🔄 重新测试</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 页脚 -->
+    <footer class="footer">
+      <p>© 2025 嵩说AI | Powered by CMAF System</p>
+      <p class="footer-note">本测评结果仅供参考，实际学习路径需结合个人情况调整</p>
+      <p class="footer-links">
+        <a href="docs/privacy-policy.html" target="_blank">🔒 隐私政策</a> |
+        <a href="javascript:void(0)" onclick="window.ConsentManager && window.ConsentManager.showConsentModal()">⚙️ 数据收集设置</a>
+      </p>
+    </footer>
+  </div>
+
+  <!-- JavaScript -->
+  <script src="consent-modal.js"></script>
+  <script src="github-data-collector.js"></script>
+  <script src="app.js?v=20251113"></script>
+</body>
+</html>
