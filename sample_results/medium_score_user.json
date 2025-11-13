@@ -1,0 +1,60 @@
+{
+  "userId": "sample_user_002",
+  "timestamp": "2025-11-06T11:00:00+08:00",
+  "answers": {
+    "TB": [4, 3, 4],
+    "LS": [4, 4, 3],
+    "TI": [3, 4, 3],
+    "GO": [4, 4, 3],
+    "AI": [4, 5, 4],
+    "DM": [3, 4, 4],
+    "CC": [3, 3, 3],
+    "CR": [4, 4, 3],
+    "B1": "A",
+    "B2": "A",
+    "hours_per_week": 7
+  },
+  "dimension_scores": {
+    "TB": 68.8,
+    "LS": 101.7,
+    "TI": 63.3,
+    "GO": 68.8,
+    "AI": 118.3,
+    "DM": 68.8,
+    "CC": 56.3,
+    "CR": 68.8
+  },
+  "final": {
+    "main_route": "T2",
+    "sub_route": "T3",
+    "isDirect": false,
+    "scores": {
+      "T1": 62.5,
+      "T2": 78.9,
+      "T3": 71.2,
+      "T4": 54.3,
+      "T5": 60.1
+    },
+    "explanation": "根据你的测试结果，你最适合 <strong>技术突破路线</strong>（加权得分 78.9 分）。同时，<strong>数据驱动路线</strong> 也很适合你作为辅助方向。",
+    "shareText": "🤖 我完成了「嵩说AI | AI学习自测表」！\n\n✨ 我的学习路线：技术突破路线\n适合有一定技术基础、想深入AI技术的开发者\n\n📋 7日行动计划：\n1. Day 1: 搭建本地Python环境，安装必要的AI库\n2. Day 2: 学习Transformer模型基础原理\n3. Day 3: 完成第一个机器学习项目（如MNIST手写数字识别）\n...\n\n💡 赶快来测测你的AI学习路线吧！"
+  },
+  "suggested_plan": {
+    "7_day_checklist": [
+      "Day 1: 搭建本地Python环境，安装必要的AI库",
+      "Day 2: 学习Transformer模型基础原理",
+      "Day 3: 完成第一个机器学习项目（如MNIST手写数字识别）",
+      "Day 4: 学习使用Hugging Face模型库",
+      "Day 5: 微调一个小型预训练模型",
+      "Day 6: 阅读3篇AI领域经典论文",
+      "Day 7: 将本周项目发布到GitHub，写技术博客"
+    ],
+    "command_cards": [
+      "代码是最好的学习方式",
+      "每天写代码，每周做项目",
+      "从复现经典模型开始，逐步创新"
+    ]
+  },
+  "meta": {
+    "note": "中等分数用户示例：有一定基础，AI认知水平较高，通过加权模型得出T2路线，T3为副线"
+  }
+}

@@ -17,37 +17,25 @@ class GitHubDataCollector {
   }
 
   /**
-   * 初始化收集器
+   * 初始化收集器（本地存储模式）
    */
   async init() {
     if (this.isInitialized) return true;
 
     try {
-      // 从localStorage读取token
-      const storedToken = localStorage.getItem('github_api_token');
-      if (storedToken) {
-        this.config.token = storedToken;
-      }
-
-      // 检查配置是否完整
-      if (!this.config.owner || !this.config.repo || !this.config.token) {
-        console.warn('⚠️ GitHub配置未完成，数据将只保存到本地');
-        console.warn('💡 提示：请在浏览器Console中运行以下命令配置Token：');
-        console.warn(`localStorage.setItem('github_api_token', '你的Token')`);
-        return false;
-      }
-
+      // 本地存储模式，无需GitHub配置
       this.isInitialized = true;
-      console.log('✅ GitHub数据收集器初始化成功');
+      console.log('✅ 数据收集器初始化成功（本地存储模式）');
+      console.log('💾 您的测试数据将安全保存在浏览器本地');
       return true;
     } catch (error) {
-      console.error('❌ GitHub数据收集器初始化失败:', error);
+      console.error('❌ 数据收集器初始化失败:', error);
       return false;
     }
   }
 
   /**
-   * 提交测试数据
+   * 提交测试数据（本地存储模式）
    * @param {Object} answers - 用户答题数据
    * @param {Object} dimensionScores - 维度得分
    * @param {Object} result - 测试结果
@@ -78,24 +66,14 @@ class GitHubDataCollector {
         usageStats: this.collectUsageStats()
       };
 
-      // 尝试提交到GitHub
-      if (this.isInitialized) {
-        const submitResult = await this.submitToGitHub(dataPackage);
-        if (submitResult.success) {
-          console.log('✅ 数据已成功提交到GitHub');
-          return { success: true, method: 'github' };
-        }
-      }
-
-      // 如果GitHub提交失败，保存到本地
+      // 保存到本地（不上传到GitHub）
       this.saveToLocalBackup(dataPackage);
-      console.log('💾 数据已保存到本地备份');
+      console.log('💾 数据已安全保存到浏览器本地');
+      console.log('📊 您可以通过浏览器开发者工具查看localStorage数据');
       return { success: true, method: 'local' };
 
     } catch (error) {
-      console.error('❌ 数据提交失败:', error);
-      // 确保数据不丢失
-      this.saveToLocalBackup({ answers, dimensionScores, result });
+      console.error('❌ 数据保存失败:', error);
       return { success: false, error: error.message };
     }
   }
