@@ -304,14 +304,14 @@ function addConsentStyles() {
 }
 
 /**
- * 页面加载时显示同意弹窗
+ * 页面加载时显示同意弹窗（已禁用）
  */
-document.addEventListener('DOMContentLoaded', () => {
-  // 延迟1秒显示，避免打断用户首次浏览体验
-  setTimeout(() => {
-    showConsentModal();
-  }, 1000);
-});
+// document.addEventListener('DOMContentLoaded', () => {
+//   // 延迟1秒显示，避免打断用户首次浏览体验
+//   setTimeout(() => {
+//     showConsentModal();
+//   }, 1000);
+// });
 
 // 导出函数供其他模块使用
 window.ConsentManager = {
