@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>嵩说AI - 横版片头动画（全屏屏保版 - 10秒循环）</title>
+    <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+    <script src="https://unpkg.com/gsap@3.12.5/dist/gsap.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100vw;
+            height: 100vh;
+            background: #000;
+            font-family: 'Noto Sans SC', 'Microsoft YaHei', 'PingFang SC', Arial, sans-serif;
+            overflow: hidden;
+            cursor: none; /* 屏保模式隐藏鼠标 */
+        }
+
+        /* 引入圆润字体 - 思源黑体圆体风格 */
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500;700;900&display=swap');
+
+        /* 容器保持1920x1080固定尺寸，通过transform自适应全屏 */
+        #container {
+            position: relative;
+            width: 1920px;
+            height: 1080px;
+            background: #0f0f23;
+            overflow: hidden;
+            transform-origin: center;
+        }
+
+        /* Waves波浪背景Canvas - 唯一背景层 */
+        #waves-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* 文字内容容器 */
+        #text-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 2;
+            width: 100%;
+        }
+
+        /* 文字行通用样式 */
+        .text-line {
+            opacity: 0;
+            text-align: center;
+        }
+
+        /* 第一行 - 白色字体+粉色背景+紫色光晕（方案C最终版） */
+        .text-line-1 {
+            font-size: 88px;
+            font-weight: 700;
+            margin-bottom: 35px;
+            font-family: 'M PLUS Rounded 1c', 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+            display: flex;
+            align-items: center;
+            overflow: hidden; /* 弹簧动画需要 */
+        }
+
+        .text-line-1-content {
+            color: #ffffff; /* 纯白色 */
+            display: flex;
+            align-items: center;
+        }
+
+        /* 普通文字（紫色光晕） */
+        .text-normal {
+            color: #ffffff;
+            filter: drop-shadow(0 0 30px rgba(168, 85, 247, 0.8))
+                    drop-shadow(0 0 15px rgba(102, 126, 234, 0.6))
+                    drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5));
+        }
+
+        /* 高亮文字（粉色圆角背景） */
+        .text-highlight {
+            display: inline-block;
+            background: linear-gradient(135deg, #FFB6C1 0%, #FFC0CB 100%); /* 粉色渐变背景 */
+            color: #1a1a2e; /* 深色文字 */
+            padding: 8px 20px;
+            border-radius: 12px;
+            margin: 0 8px;
+            font-weight: 900;
+            box-shadow: 0 4px 15px rgba(255, 182, 193, 0.5);
+        }
+
+        /* 弹簧动画容器 */
+        .spring-char {
+            display: inline-block;
+            transform: translateY(100%);
+            opacity: 0;
+        }
+
+        /* 第二行 - 白色字体+粉色背景+紫色光晕（方案C最终版） */
+        .text-line-2 {
+            font-size: 88px;
+            font-weight: 900;
+            margin-bottom: 50px;
+            font-family: 'M PLUS Rounded 1c', 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+            display: flex;
+            align-items: center;
+            overflow: hidden; /* 弹簧动画需要 */
+        }
+
+        .text-line-2-content {
+            color: #ffffff; /* 纯白色 */
+            display: flex;
+            align-items: center;
+        }
+
+        /* 第三行 - 白色+抖音色边（方案C：放大品牌） */
+        .text-line-3 {
+            font-size: 142px; /* 黄金比例：88×1.618≈142 */
+            font-weight: 900;
+            letter-spacing: 12px; /* 增加字间距 */
+        }
+
+        .text-line-3-content {
+            position: relative;
+            color: #ffffff;
+            z-index: 3;
+        }
+
+        /* 抖音风格Glitch效果 - 白色在上，红绿在下（增强版） */
+        .douyin-glitch::before {
+            content: attr(data-text);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            color: #00f2ea; /* 青色 */
+            left: -6px; /* 增大偏移 */
+            top: -3px;
+            z-index: -1;
+            opacity: 0.95; /* 增强不透明度 */
+            clip: rect(0px, 9999px, 9999px, 0px);
+            animation: douyin-glitch-anim-1 1.5s infinite linear alternate-reverse;
+        }
+
+        .douyin-glitch::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            color: #fe2c55; /* 红色 */
+            left: 6px; /* 增大偏移 */
+            top: 3px;
+            z-index: -1;
+            opacity: 0.95; /* 增强不透明度 */
+            clip: rect(0px, 9999px, 9999px, 0px);
+            animation: douyin-glitch-anim-2 2s infinite linear alternate-reverse;
+        }
+
+        @keyframes douyin-glitch-anim-1 {
+            0% { clip: rect(10px, 9999px, 60px, 0); }
+            20% { clip: rect(40px, 9999px, 100px, 0); }
+            40% { clip: rect(70px, 9999px, 140px, 0); }
+            60% { clip: rect(5px, 9999px, 80px, 0); }
+            80% { clip: rect(50px, 9999px, 120px, 0); }
+            100% { clip: rect(20px, 9999px, 150px, 0); }
+        }
+
+        @keyframes douyin-glitch-anim-2 {
+            0% { clip: rect(30px, 9999px, 90px, 0); }
+            20% { clip: rect(60px, 9999px, 130px, 0); }
+            40% { clip: rect(15px, 9999px, 70px, 0); }
+            60% { clip: rect(45px, 9999px, 110px, 0); }
+            80% { clip: rect(25px, 9999px, 95px, 0); }
+            100% { clip: rect(55px, 9999px, 145px, 0); }
+        }
+
+        #info {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 12px;
+            z-index: 100;
+            display: none; /* 屏保模式默认隐藏 */
+        }
+
+        /* 鼠标移动显示信息 */
+        body:hover #info {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <!-- Waves波浪背景Canvas - 唯一背景层 -->
+        <canvas id="waves-canvas"></canvas>
+
+        <!-- 文字内容区 -->
+        <div id="text-container">
+            <div class="text-line text-line-1">
+                <div class="text-line-1-content">
+                    <span class="text-normal" id="line1-part1"></span>
+                    <span class="text-highlight" id="line1-highlight"></span>
+                    <span class="text-normal" id="line1-part2"></span>
+                </div>
+            </div>
+            <div class="text-line text-line-2">
+                <div class="text-line-2-content">
+                    <span class="text-normal" id="line2-part1"></span>
+                    <span class="text-highlight" id="line2-highlight"></span>
+                    <span class="text-normal" id="line2-part2"></span>
+                </div>
+            </div>
+            <div class="text-line text-line-3">
+                <span class="text-line-3-content douyin-glitch" data-text=""></span>
+            </div>
+        </div>
+
+    </div>
+
+    <div id="info">
+        嵩说AI横版片头（满屏循环版） | 10秒循环 | 按ESC退出 | 自动满屏显示
+    </div>
+
+    <script>
+        // ==================== Waves波浪背景JavaScript代码 ====================
+        class Grad {
+            constructor(x, y, z) {
+                this.x = x;
+                this.y = y;
+                this.z = z;
+            }
+            dot2(x, y) {
+                return this.x * x + this.y * y;
+            }
+        }
+
+        class Noise {
+            constructor(seed = 0) {
+                this.grad3 = [
+                    new Grad(1, 1, 0), new Grad(-1, 1, 0), new Grad(1, -1, 0), new Grad(-1, -1, 0),
+                    new Grad(1, 0, 1), new Grad(-1, 0, 1), new Grad(1, 0, -1), new Grad(-1, 0, -1),
+                    new Grad(0, 1, 1), new Grad(0, -1, 1), new Grad(0, 1, -1), new Grad(0, -1, -1)
+                ];
+                this.p = [
+                    151, 160, 137, 91, 90, 15, 131, 13, 201, 95, 96, 53, 194, 233, 7, 225, 140, 36, 103, 30, 69, 142, 8, 99, 37, 240,
+                    21, 10, 23, 190, 6, 148, 247, 120, 234, 75, 0, 26, 197, 62, 94, 252, 219, 203, 117, 35, 11, 32, 57, 177, 33, 88,
+                    237, 149, 56, 87, 174, 20, 125, 136, 171, 168, 68, 175, 74, 165, 71, 134, 139, 48, 27, 166, 77, 146, 158, 231, 83,
+                    111, 229, 122, 60, 211, 133, 230, 220, 105, 92, 41, 55, 46, 245, 40, 244, 102, 143, 54, 65, 25, 63, 161, 1, 216,
+                    80, 73, 209, 76, 132, 187, 208, 89, 18, 169, 200, 196, 135, 130, 116, 188, 159, 86, 164, 100, 109, 198, 173, 186,
+                    3, 64, 52, 217, 226, 250, 124, 123, 5, 202, 38, 147, 118, 126, 255, 82, 85, 212, 207, 206, 59, 227, 47, 16, 58,
+                    17, 182, 189, 28, 42, 223, 183, 170, 213, 119, 248, 152, 2, 44, 154, 163, 70, 221, 153, 101, 155, 167, 43, 172, 9,
+                    129, 22, 39, 253, 19, 98, 108, 110, 79, 113, 224, 232, 178, 185, 112, 104, 218, 246, 97, 228, 251, 34, 242, 193,
+                    238, 210, 144, 12, 191, 179, 162, 241, 81, 51, 145, 235, 249, 14, 239, 107, 49, 192, 214, 31, 181, 199, 106, 157,
+                    184, 84, 204, 176, 115, 121, 50, 45, 127, 4, 150, 254, 138, 236, 205, 93, 222, 114, 67, 29, 24, 72, 243, 141, 128,
+                    195, 78, 66, 215, 61, 156, 180
+                ];
+                this.perm = new Array(512);
+                this.gradP = new Array(512);
+                this.seed(seed);
+            }
+            seed(seed) {
+                if (seed > 0 && seed < 1) seed *= 65536;
+                seed = Math.floor(seed);
+                if (seed < 256) seed |= seed << 8;
+                for (let i = 0; i < 256; i++) {
+                    let v = i & 1 ? this.p[i] ^ (seed & 255) : this.p[i] ^ ((seed >> 8) & 255);
+                    this.perm[i] = this.perm[i + 256] = v;
+                    this.gradP[i] = this.gradP[i + 256] = this.grad3[v % 12];
+                }
+            }
+            fade(t) {
+                return t * t * t * (t * (t * 6 - 15) + 10);
+            }
+            lerp(a, b, t) {
+                return (1 - t) * a + t * b;
+            }
+            perlin2(x, y) {
+                let X = Math.floor(x), Y = Math.floor(y);
+                x -= X; y -= Y;
+                X &= 255; Y &= 255;
+                const n00 = this.gradP[X + this.perm[Y]].dot2(x, y);
+                const n01 = this.gradP[X + this.perm[Y + 1]].dot2(x, y - 1);
+                const n10 = this.gradP[X + 1 + this.perm[Y]].dot2(x - 1, y);
+                const n11 = this.gradP[X + 1 + this.perm[Y + 1]].dot2(x - 1, y - 1);
+                const u = this.fade(x);
+                return this.lerp(this.lerp(n00, n10, u), this.lerp(n01, n11, u), this.fade(y));
+            }
+        }
+
+        class WavesRenderer {
+            constructor(canvas, config = {}) {
+                this.canvas = canvas;
+                this.ctx = canvas.getContext('2d');
+                this.width = 0;
+                this.height = 0;
+                this.config = {
+                    waveSpeedX: config.waveSpeedX || 0.0125,
+                    waveSpeedY: config.waveSpeedY || 0.005,
+                    waveAmpX: config.waveAmpX || 32,
+                    waveAmpY: config.waveAmpY || 16,
+                    xGap: config.xGap || 10,
+                    yGap: config.yGap || 32,
+                    friction: config.friction || 0.925,
+                    tension: config.tension || 0.005,
+                    maxCursorMove: config.maxCursorMove || 100
+                };
+                this.noise = new Noise(Math.random());
+                this.lines = [];
+                this.mouse = { x: -10, y: 0, lx: 0, ly: 0, sx: 0, sy: 0, v: 0, vs: 0, a: 0, set: false };
+                this.frameId = null;
+                this.startTime = performance.now();
+                this.init();
+            }
+
+            init() {
+                this.setSize();
+                this.setLines();
+                window.addEventListener('resize', () => this.onResize());
+                window.addEventListener('mousemove', (e) => this.onMouseMove(e));
+                window.addEventListener('touchmove', (e) => this.onTouchMove(e), { passive: false });
+                this.frameId = requestAnimationFrame((t) => this.tick(t));
+            }
+
+            setSize() {
+                const rect = this.canvas.getBoundingClientRect();
+                this.width = rect.width;
+                this.height = rect.height;
+                this.canvas.width = this.width;
+                this.canvas.height = this.height;
+            }
+
+            setLines() {
+                this.lines = [];
+                const { width, height } = this;
+                const oWidth = width + 200, oHeight = height + 30;
+                const { xGap, yGap } = this.config;
+                const totalLines = Math.ceil(oWidth / xGap);
+                const totalPoints = Math.ceil(oHeight / yGap);
+                const xStart = (width - xGap * totalLines) / 2;
+                const yStart = (height - yGap * totalPoints) / 2;
+                for (let i = 0; i <= totalLines; i++) {
+                    const pts = [];
+                    for (let j = 0; j <= totalPoints; j++) {
+                        pts.push({
+                            x: xStart + xGap * i,
+                            y: yStart + yGap * j,
+                            wave: { x: 0, y: 0 },
+                            cursor: { x: 0, y: 0, vx: 0, vy: 0 }
+                        });
+                    }
+                    this.lines.push(pts);
+                }
+            }
+
+            movePoints(time) {
+                const { waveSpeedX, waveSpeedY, waveAmpX, waveAmpY, friction, tension, maxCursorMove } = this.config;
+                const { mouse, noise, lines } = this;
+                lines.forEach(pts => {
+                    pts.forEach(p => {
+                        const move = noise.perlin2((p.x + time * waveSpeedX) * 0.002, (p.y + time * waveSpeedY) * 0.0015) * 12;
+                        p.wave.x = Math.cos(move) * waveAmpX;
+                        p.wave.y = Math.sin(move) * waveAmpY;
+                        const dx = p.x - mouse.sx, dy = p.y - mouse.sy;
+                        const dist = Math.hypot(dx, dy), l = Math.max(175, mouse.vs);
+                        if (dist < l) {
+                            const s = 1 - dist / l;
+                            const f = Math.cos(dist * 0.001) * s;
+                            p.cursor.vx += Math.cos(mouse.a) * f * l * mouse.vs * 0.00065;
+                            p.cursor.vy += Math.sin(mouse.a) * f * l * mouse.vs * 0.00065;
+                        }
+                        p.cursor.vx += (0 - p.cursor.x) * tension;
+                        p.cursor.vy += (0 - p.cursor.y) * tension;
+                        p.cursor.vx *= friction;
+                        p.cursor.vy *= friction;
+                        p.cursor.x += p.cursor.vx * 2;
+                        p.cursor.y += p.cursor.vy * 2;
+                        p.cursor.x = Math.min(maxCursorMove, Math.max(-maxCursorMove, p.cursor.x));
+                        p.cursor.y = Math.min(maxCursorMove, Math.max(-maxCursorMove, p.cursor.y));
+                    });
+                });
+            }
+
+            moved(point, withCursor = true) {
+                const x = point.x + point.wave.x + (withCursor ? point.cursor.x : 0);
+                const y = point.y + point.wave.y + (withCursor ? point.cursor.y : 0);
+                return { x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10 };
+            }
+
+            drawLines() {
+                const { width, height } = this;
+                const ctx = this.ctx;
+                ctx.clearRect(0, 0, width, height);
+                ctx.beginPath();
+                // 蓝紫色渐变 - 增强视觉效果
+                const gradient = ctx.createLinearGradient(0, 0, width, height);
+                gradient.addColorStop(0, 'rgba(102, 126, 234, 0.9)');
+                gradient.addColorStop(1, 'rgba(168, 85, 247, 0.9)');
+                ctx.strokeStyle = gradient;
+                ctx.lineWidth = 2;
+                this.lines.forEach(points => {
+                    let p1 = this.moved(points[0], false);
+                    ctx.moveTo(p1.x, p1.y);
+                    points.forEach((p, idx) => {
+                        const isLast = idx === points.length - 1;
+                        p1 = this.moved(p, !isLast);
+                        const p2 = this.moved(points[idx + 1] || points[points.length - 1], !isLast);
+                        ctx.lineTo(p1.x, p1.y);
+                        if (isLast) ctx.moveTo(p2.x, p2.y);
+                    });
+                });
+                ctx.stroke();
+            }
+
+            tick(t) {
+                const mouse = this.mouse;
+                mouse.sx += (mouse.x - mouse.sx) * 0.1;
+                mouse.sy += (mouse.y - mouse.sy) * 0.1;
+                const dx = mouse.x - mouse.lx, dy = mouse.y - mouse.ly;
+                const d = Math.hypot(dx, dy);
+                mouse.v = d;
+                mouse.vs += (d - mouse.vs) * 0.1;
+                mouse.vs = Math.min(100, mouse.vs);
+                mouse.lx = mouse.x;
+                mouse.ly = mouse.y;
+                mouse.a = Math.atan2(dy, dx);
+                this.movePoints(t);
+                this.drawLines();
+                this.frameId = requestAnimationFrame((t) => this.tick(t));
+            }
+
+            onResize() {
+                this.setSize();
+                this.setLines();
+                adjustContainerScale(); // 重新计算容器缩放
+            }
+
+            onMouseMove(e) {
+                this.updateMouse(e.clientX, e.clientY);
+            }
+
+            onTouchMove(e) {
+                const touch = e.touches[0];
+                this.updateMouse(touch.clientX, touch.clientY);
+            }
+
+            updateMouse(x, y) {
+                const rect = this.canvas.getBoundingClientRect();
+                this.mouse.x = x - rect.left;
+                this.mouse.y = y - rect.top;
+                if (!this.mouse.set) {
+                    this.mouse.sx = this.mouse.x;
+                    this.mouse.sy = this.mouse.y;
+                    this.mouse.lx = this.mouse.x;
+                    this.mouse.ly = this.mouse.y;
+                    this.mouse.set = true;
+                }
+            }
+        }
+
+        // ==================== 弹簧动画效果类 ====================
+        function createSpringChars(containerId, text, isHighlight = false) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+
+            container.innerHTML = ''; // 清空容器
+
+            // 将文本分割成单个字符
+            const chars = Array.from(text);
+
+            // 为每个字符创建span元素
+            chars.forEach((char, index) => {
+                const span = document.createElement('span');
+                span.className = 'spring-char';
+                span.textContent = char;
+                span.style.transitionDelay = `${index * 0.025}s`; // 0.025s stagger delay
+                container.appendChild(span);
+            });
+        }
+
+        // 打字机效果类（保留用于第三行）
+        class TypeWriter {
+            constructor(element, text, speed = 50) {
+                this.element = element;
+                this.fullText = text;
+                this.speed = speed;
+                this.currentIndex = 0;
+                this.isComplete = false;
+            }
+
+            start() {
+                return new Promise((resolve) => {
+                    const interval = setInterval(() => {
+                        if (this.currentIndex < this.fullText.length) {
+                            this.element.textContent += this.fullText[this.currentIndex];
+                            this.currentIndex++;
+                        } else {
+                            clearInterval(interval);
+                            this.isComplete = true;
+                            resolve();
+                        }
+                    }, this.speed);
+                });
+            }
+
+            reset() {
+                this.element.textContent = '';
+                this.currentIndex = 0;
+                this.isComplete = false;
+            }
+        }
+
+        // ==================== 全屏自适应缩放（满屏填充） ====================
+        function adjustContainerScale() {
+            const container = document.getElementById('container');
+            const windowWidth = window.innerWidth;
+            const windowHeight = window.innerHeight;
+            const containerWidth = 1920;
+            const containerHeight = 1080;
+
+            // 计算缩放比例（使用max填满屏幕，超出部分会被裁切）
+            const scaleX = windowWidth / containerWidth;
+            const scaleY = windowHeight / containerHeight;
+            const scale = Math.max(scaleX, scaleY); // 改用max实现满屏填充
+
+            container.style.transform = `scale(${scale})`;
+        }
+
+        // ==================== 动画时间线 ====================
+        let typeWriter3; // 第三行保留打字机效果
+        let mainTimeline;
+
+        function initAnimation() {
+            // 初始化Waves波浪背景（唯一背景层）
+            const wavesCanvas = document.getElementById('waves-canvas');
+            new WavesRenderer(wavesCanvas);
+
+            // 调整容器缩放
+            adjustContainerScale();
+            window.addEventListener('resize', adjustContainerScale);
+
+            console.log('🌊 方案C：纯色阴影版 - 波浪背景已启动');
+            console.log('🎨 蓝紫波浪 + 白色文字 + 紫色光晕 + 粉色高亮背景 + 弹簧动画效果');
+            console.log('⏱️ 时间线：4秒精准设计（0.5s→1.5s→2.5s→4.0s）');
+            console.log('🔄 10秒循环：动画4秒 + 展示4秒 + 淡出2秒');
+
+            // 第一行：想零基础学AI?
+            // 分割：想 + 零基础 + 学AI?
+            createSpringChars('line1-part1', '想');
+            createSpringChars('line1-highlight', '零基础');
+            createSpringChars('line1-part2', '学AI?');
+
+            // 第二行：没人比我起点更低！
+            // 分割：没人比我 + 起点更低 + ！
+            createSpringChars('line2-part1', '没人比我');
+            createSpringChars('line2-highlight', '起点更低');
+            createSpringChars('line2-part2', '！');
+
+            // 第三行保持原有打字机效果（加快速度以匹配4秒时间线）
+            const line3Element = document.querySelector('.text-line-3-content');
+            typeWriter3 = new TypeWriter(line3Element, '欢迎来到 嵩说AI', 80);
+
+            // 设置data-text用于Glitch效果
+            line3Element.setAttribute('data-text', '欢迎来到 嵩说AI');
+
+            createTimeline();
+        }
+
+        function createTimeline() {
+            mainTimeline = gsap.timeline();
+
+            // 🎬 新的4秒时间线设计
+            // 0-0.5s: 波浪背景初始化
+            // 0.5-1.5s: 第一行弹簧动画（1秒）
+            // 1.5-2.5s: 第二行弹簧动画（1秒）
+            // 2.5-4.0s: 第三行Glitch打字机（1.5秒）
+
+            // ===== 第一行：0.5s开始 =====
+            mainTimeline.to('.text-line-1', {
+                opacity: 1,
+                duration: 0.2,
+                ease: 'power2.out'
+            }, 0.5);
+
+            // 0.65s: 开始弹簧动画（加快节奏）
+            mainTimeline.to('#line1-part1 .spring-char', {
+                y: 0,
+                opacity: 1,
+                duration: 0.6,
+                ease: 'elastic.out(1, 0.5)',
+                stagger: 0.02
+            }, 0.65);
+
+            mainTimeline.to('#line1-highlight .spring-char', {
+                y: 0,
+                opacity: 1,
+                duration: 0.6,
+                ease: 'elastic.out(1, 0.5)',
+                stagger: 0.02
+            }, 0.65 + 0.02 * 1); // 延迟1个字符
+
+            mainTimeline.to('#line1-part2 .spring-char', {
+                y: 0,
+                opacity: 1,
+                duration: 0.6,
+                ease: 'elastic.out(1, 0.5)',
+                stagger: 0.02
+            }, 0.65 + 0.02 * 4); // 延迟4个字符
+
+            // ===== 第二行：1.5s开始 =====
+            mainTimeline.to('.text-line-2', {
+                opacity: 1,
+                duration: 0.2,
+                ease: 'power2.out'
+            }, 1.5);
+
+            // 1.65s: 开始弹簧动画
+            mainTimeline.to('#line2-part1 .spring-char', {
+                y: 0,
+                opacity: 1,
+                duration: 0.6,
+                ease: 'elastic.out(1, 0.5)',
+                stagger: 0.02
+            }, 1.65);
+
+            mainTimeline.to('#line2-highlight .spring-char', {
+                y: 0,
+                opacity: 1,
+                duration: 0.6,
+                ease: 'elastic.out(1, 0.5)',
+                stagger: 0.02
+            }, 1.65 + 0.02 * 4); // 延迟4个字符
+
+            mainTimeline.to('#line2-part2 .spring-char', {
+                y: 0,
+                opacity: 1,
+                duration: 0.6,
+                ease: 'elastic.out(1, 0.5)',
+                stagger: 0.02
+            }, 1.65 + 0.02 * 8); // 延迟8个字符
+
+            // ===== 第三行：2.5s开始 =====
+            mainTimeline.to('.text-line-3', {
+                opacity: 1,
+                duration: 0.3,
+                ease: 'power2.out'
+            }, 2.5);
+
+            mainTimeline.call(() => {
+                typeWriter3.start();
+            }, null, 2.5);
+
+            // ✅ 总时长：约4秒
+
+            // ===== 10秒循环：4秒动画 + 4秒展示 + 2秒淡出 =====
+            // 8秒：开始淡出
+            mainTimeline.to('#container', {
+                opacity: 0,
+                duration: 2,
+                ease: 'power2.inOut'
+            }, 8);
+
+            // 10秒：重启循环
+            mainTimeline.call(() => {
+                setTimeout(() => {
+                    restartAnimation();
+                }, 100);
+            }, null, 10);
+        }
+
+        function restartAnimation() {
+            // 重置容器透明度
+            gsap.set('#container', { opacity: 1 });
+
+            // 重置第三行打字机效果
+            if (typeWriter3) typeWriter3.reset();
+
+            // 重置所有文本行的透明度
+            gsap.set('.text-line', { opacity: 0 });
+
+            // 重置所有弹簧字符到初始状态（向下偏移100%，透明度0）
+            gsap.set('.spring-char', {
+                y: '100%',
+                opacity: 0
+            });
+
+            // 重启时间线
+            if (mainTimeline) {
+                mainTimeline.restart();
+            }
+        }
+
+        // ==================== 初始化 ====================
+        function waitForLibraries() {
+            if (typeof THREE !== 'undefined' && typeof gsap !== 'undefined') {
+                console.log('✅ Three.js和GSAP加载成功');
+                console.log('🖥️ 屏保模式已启动 | 10秒循环');
+                initAnimation();
+            } else {
+                console.log('⏳ 等待库加载...');
+                setTimeout(waitForLibraries, 100);
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            waitForLibraries();
+        });
+
+        // ESC键退出屏保
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                if (confirm('退出屏保模式？')) {
+                    window.close();
+                }
+            }
+            // F11全屏（提示）
+            if (e.key === 'F11') {
+                e.preventDefault();
+                document.documentElement.requestFullscreen();
+            }
+        });
+    </script>
+</body>
+</html>
