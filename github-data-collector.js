@@ -5,11 +5,9 @@
 
 class GitHubDataCollector {
   constructor() {
-    // GitHub仓库配置
+    // 后端API配置（通过Vercel代理提交到私有仓库）
     this.config = {
-      owner: 'calvin-Yi3Wood',  // GitHub用户名
-      repo: 'AI-learning-self-test',  // 仓库名
-      token: ''  // Token将从localStorage读取（首次访问时用户配置）
+      apiUrl: 'https://ai-test-backend.vercel.app/api/submit'  // Vercel后端API
     };
 
     this.isInitialized = false;
@@ -17,16 +15,20 @@ class GitHubDataCollector {
   }
 
   /**
-   * 初始化收集器（本地存储模式）
+   * 初始化收集器
    */
   async init() {
     if (this.isInitialized) return true;
 
     try {
-      // 本地存储模式，无需GitHub配置
+      // 检查后端API配置
+      if (!this.config.apiUrl) {
+        console.warn('⚠️ 后端API未配置，数据将只保存到本地');
+        return false;
+      }
+
       this.isInitialized = true;
-      console.log('✅ 数据收集器初始化成功（本地存储模式）');
-      console.log('💾 您的测试数据将安全保存在浏览器本地');
+      console.log('✅ 数据收集系统已启动（通过后端API）');
       return true;
     } catch (error) {
       console.error('❌ 数据收集器初始化失败:', error);
@@ -35,7 +37,7 @@ class GitHubDataCollector {
   }
 
   /**
-   * 提交测试数据（本地存储模式）
+   * 提交测试数据
    * @param {Object} answers - 用户答题数据
    * @param {Object} dimensionScores - 维度得分
    * @param {Object} result - 测试结果
@@ -66,45 +68,48 @@ class GitHubDataCollector {
         usageStats: this.collectUsageStats()
       };
 
-      // 保存到本地（不上传到GitHub）
+      // 尝试提交到后端API
+      if (this.isInitialized) {
+        const submitResult = await this.submitToBackend(dataPackage);
+        if (submitResult.success) {
+          console.log('✅ 数据已成功提交');
+          return { success: true, method: 'api' };
+        }
+      }
+
+      // 如果API提交失败，保存到本地
       this.saveToLocalBackup(dataPackage);
-      console.log('💾 数据已安全保存到浏览器本地');
-      console.log('📊 您可以通过浏览器开发者工具查看localStorage数据');
+      console.log('💾 数据已保存到本地备份');
       return { success: true, method: 'local' };
 
     } catch (error) {
-      console.error('❌ 数据保存失败:', error);
+      console.error('❌ 数据提交失败:', error);
+      // 确保数据不丢失
+      this.saveToLocalBackup({ answers, dimensionScores, result });
       return { success: false, error: error.message };
     }
   }
 
   /**
-   * 通过GitHub API提交数据
+   * 通过后端API提交数据
    */
-  async submitToGitHub(dataPackage) {
+  async submitToBackend(dataPackage) {
     try {
-      const url = `https://api.github.com/repos/${this.config.owner}/${this.config.repo}/dispatches`;
-
-      const response = await fetch(url, {
+      const response = await fetch(this.config.apiUrl, {
         method: 'POST',
         headers: {
-          'Accept': 'application/vnd.github.v3+json',
-          'Authorization': `token ${this.config.token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          event_type: 'submit-test-data',
-          client_payload: dataPackage
-        })
+        body: JSON.stringify(dataPackage)
       });
 
-      if (response.status === 204) {
-        // GitHub API返回204表示成功
+      const result = await response.json();
+
+      if (result.success) {
         return { success: true };
       } else {
-        const errorText = await response.text();
-        console.error('GitHub API错误:', response.status, errorText);
-        return { success: false, error: errorText };
+        console.error('后端API错误:', result.error);
+        return { success: false, error: result.error };
       }
     } catch (error) {
       console.error('网络请求失败:', error);

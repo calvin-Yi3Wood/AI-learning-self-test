@@ -1,0 +1,64 @@
+name: 收集测试数据
+
+# 触发条件：通过API调用（repository_dispatch）
+on:
+  repository_dispatch:
+    types: [submit-test-data]
+
+jobs:
+  save-data:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. 检出代码
+      - name: 检出仓库
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # 2. 设置Python环境（用于数据处理）
+      - name: 设置Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # 3. 安装依赖
+      - name: 安装依赖
+        run: |
+          pip install pandas openpyxl pytz
+
+      # 4. 创建数据目录
+      - name: 创建数据目录
+        run: |
+          mkdir -p data/raw
+          mkdir -p data/reports
+
+      # 5. 保存原始数据
+      - name: 保存测试数据
+        run: |
+          # 生成时间戳文件名
+          TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+          FILENAME="data/raw/test_${TIMESTAMP}_${{ github.event.client_payload.anonymousId }}.json"
+
+          # 保存完整数据
+          cat > "$FILENAME" << 'EOF'
+          ${{ toJSON(github.event.client_payload) }}
+          EOF
+
+          echo "数据已保存到: $FILENAME"
+
+      # 6. 更新汇总数据
+      - name: 更新汇总统计
+        run: |
+          python scripts/update_summary.py
+
+      # 7. 提交到仓库
+      - name: 提交数据
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions@github.com"
+          git add data/
+          git commit -m "📊 新增测试数据 $(date +'%Y-%m-%d %H:%M:%S')" || echo "无新数据需要提交"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

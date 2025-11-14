@@ -1,0 +1,61 @@
+name: 每日数据报表
+
+# 每天凌晨2点自动运行（北京时间 = UTC+8，即UTC 18:00）
+on:
+  schedule:
+    - cron: '0 18 * * *'  # UTC 18:00 = 北京时间 02:00
+  workflow_dispatch:  # 支持手动触发
+
+jobs:
+  generate-report:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. 检出代码
+      - name: 检出仓库
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # 获取完整历史
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # 2. 设置Python环境
+      - name: 设置Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # 3. 安装依赖
+      - name: 安装依赖
+        run: |
+          pip install pandas openpyxl matplotlib seaborn pytz
+
+      # 4. 生成每日报表
+      - name: 生成统计报表
+        run: |
+          python scripts/generate_daily_report.py
+
+      # 5. 生成Excel汇总
+      - name: 生成Excel报表
+        run: |
+          python scripts/export_to_excel.py
+
+      # 6. 提交报表
+      - name: 提交报表到仓库
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions@github.com"
+          git add data/reports/
+          git commit -m "📈 每日数据报表 $(date +'%Y-%m-%d')" || echo "无新报表需要提交"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # 7. 清理旧数据（可选，保留最近90天）
+      - name: 清理旧数据
+        run: |
+          python scripts/cleanup_old_data.py --days 90
+          git add data/
+          git commit -m "🧹 清理90天前的旧数据" || echo "无旧数据需要清理"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
